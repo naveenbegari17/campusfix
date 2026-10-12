@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In - CampusFix Portal{% endblock %}
+
+{% block auth_content %}
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="brand-header">
+      <div class="login-badge-icon">CF</div>
+      <h1 class="brand-title">CampusFix Portal</h1>
+      <p class="brand-subtitle">Smart College Issue Reporting & Campus Maintenance</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            <div class="alert-content">
+              <span class="alert-icon">{% if category == 'success' %}✓{% elif category == 'danger' %}⚠{% else %}ℹ{% endif %}</span>
+              <span>{{ message }}</span>
+            </div>
+            <button onclick="this.parentElement.remove()" class="alert-close">&times;</button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('login') }}">
+      <div class="form-group">
+        <label class="form-label" for="username">Username</label>
+        <input type="text" id="username" name="username" class="form-input" placeholder="e.g. student1, admin" required autofocus autocomplete="username">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input type="password" id="password" name="password" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" style="padding: 13px; font-size: 15px; margin-top: 10px;">
+        Sign In to Portal &rarr;
+      </button>
+    </form>
+
+    <div class="demo-accounts-box">
+      <div class="demo-title">⚡ Quick Test: One-Click Demo Logins</div>
+      <p style="color: var(--text-muted); margin-bottom: 12px; font-size: 12.5px;">Click any role to autofill login credentials:</p>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+        <span class="demo-btn-pill" onclick="fillCreds('student1', 'student123')">🎓 Student</span>
+        <span class="demo-btn-pill" onclick="fillCreds('faculty1', 'faculty123')">👩‍🏫 Faculty</span>
+        <span class="demo-btn-pill" onclick="fillCreds('staff_it', 'staff123')">💻 Staff IT</span>
+        <span class="demo-btn-pill" onclick="fillCreds('staff_elec', 'staff123')">⚡ Staff Elec</span>
+        <span class="demo-btn-pill" onclick="fillCreds('staff_civil', 'staff123')">🔨 Staff Civil</span>
+        <span class="demo-btn-pill" onclick="fillCreds('staff_plumb', 'staff123')">🚰 Staff Plumb</span>
+        <span class="demo-btn-pill" onclick="fillCreds('admin', 'admin123')">🛡️ Admin</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function fillCreds(u, p) {
+  document.getElementById('username').value = u;
+  document.getElementById('password').value = p;
+}
+</script>
+{% endblock %}

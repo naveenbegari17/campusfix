@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - CampusFix{% endblock %}
+
+{% block content %}
+<div class="content-header">
+  <div>
+    <h1 class="page-title">
+      {% if session.get('role') in ['student', 'faculty'] %}
+        My Reported Issues
+      {% elif session.get('role') == 'staff' %}
+        {{ session.get('department') }} Dashboard
+      {% elif session.get('role') == 'admin' %}
+        Campus Overview & Administration
+      {% endif %}
+    </h1>
+    <p class="page-desc">
+      {% if session.get('role') in ['student', 'faculty'] %}
+        Track the status, assignment, and progress of the issues you submitted.
+      {% elif session.get('role') == 'staff' %}
+        Manage and resolve maintenance tickets assigned to {{ session.get('department') }}.
+      {% elif session.get('role') == 'admin' %}
+        Full institutional control: manage tickets, reassign departments, and monitor metrics.
+      {% endif %}
+    </p>
+  </div>
+  {% if session.get('role') != 'staff' %}
+  <div>
+    <a href="{{ url_for('raise_issue') }}" class="btn-raise-action">
+      <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+      Raise an Issue
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Modern Stat Cards Grid -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div>
+      <div class="stat-label">Total Assigned</div>
+      <div class="stat-value">{{ total_issues }}</div>
+    </div>
+    <div class="stat-icon-wrapper stat-icon-all">📋</div>
+  </div>
+  <div class="stat-card open">
+    <div>
+      <div class="stat-label">Open Issues</div>
+      <div class="stat-value" style="color: #2563eb;">{{ open_issues }}</div>
+    </div>
+    <div class="stat-icon-wrapper stat-icon-open">🔵</div>
+  </div>
+  <div class="stat-card progress">
+    <div>
+      <div class="stat-label">In Progress</div>
+      <div class="stat-value" style="color: #d97706;">{{ in_progress_issues }}</div>
+    </div>
+    <div class="stat-icon-wrapper stat-icon-progress">⏳</div>
+  </div>
+  <div class="stat-card resolved">
+    <div>
+      <div class="stat-label">Resolved</div>
+      <div class="stat-value" style="color: #059669;">{{ resolved_issues }}</div>
+    </div>
+    <div class="stat-icon-wrapper stat-icon-resolved">✅</div>
+  </div>
+</div>
+
+<!-- Search & Filters Bar -->
+<form method="GET" action="{{ url_for('dashboard') }}" class="filter-bar">
+  <div class="filter-input">
+    <input
+      type="text"
+      name="search"
+      value="{{ search }}"
+      placeholder="Search issues by title, location, or keyword..."
+      class="form-input"
+    >
+  </div>
+
+  <div style="min-width: 150px;">
+    <select name="status" class="form-select">
+      <option value="">All Statuses</option>
+      <option value="Open" {% if status_filter == 'Open' %}selected{% endif %}>Open</option>
+      <option value="In Progress" {% if status_filter == 'In Progress' %}selected{% endif %}>In Progress</option>
+      <option value="Resolved" {% if status_filter == 'Resolved' %}selected{% endif %}>Resolved</option>
+    </select>
+  </div>
+
+  <div style="min-width: 140px;">
+    <select name="priority" class="form-select">
+      <option value="">All Priorities</option>
+      <option value="Low" {% if priority_filter == 'Low' %}selected{% endif %}>Low</option>
+      <option value="Medium" {% if priority_filter == 'Medium' %}selected{% endif %}>Medium</option>
+      <option value="High" {% if priority_filter == 'High' %}selected{% endif %}>High</option>
+      <option value="Urgent" {% if priority_filter == 'Urgent' %}selected{% endif %}>Urgent</option>
+    </select>
+  </div>
+
+  {% if session.get('role') == 'admin' %}
+  <div style="min-width: 180px;">
+    <select name="department" class="form-select">
+      <option value="">All Departments</option>
+      {% for dept in all_depts %}
+        <option value="{{ dept }}" {% if dept_filter == dept %}selected{% endif %}>{{ dept }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endif %}
+
+  <button type="submit" class="btn btn-secondary">Filter</button>
+  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary" style="color: var(--text-muted);">Reset</a>
+</form>
+
+<!-- Modern Table Container -->
+<div class="table-container">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title & Category</th>
+          <th>Location</th>
+          <th>Assigned Department</th>
+          <th>Priority</th>
+          <th>Status</th>
+          <th>Reported By</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if issues %}
+          {% for issue in issues %}
+          <tr>
+            <td style="font-weight: 700; color: var(--text-muted);">#{{ issue.id }}</td>
+            <td>
+              <a href="{{ url_for('issue_detail', issue_id=issue.id) }}" style="font-weight: 600; color: var(--primary); text-decoration: none;">
+                {{ issue.title }}
+              </a>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                📂 {{ issue.category }}
+              </div>
+            </td>
+            <td>
+              <span style="font-size: 13.5px;">📍 {{ issue.location }}</span>
+            </td>
+            <td>
+              <span class="badge badge-dept">{{ issue.assigned_department }}</span>
+            </td>
+            <td>
+              <span class="badge badge-{{ issue.priority.lower() }}">
+                {{ issue.priority }}
+              </span>
+            </td>
+            <td>
+              <span class="badge badge-{{ issue.status.lower().replace(' ', '-') }}">
+                {{ issue.status }}
+              </span>
+            </td>
+            <td style="font-size: 13px;">
+              <div style="font-weight: 600;">{{ issue.reported_by_name }}</div>
+              <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">{{ issue.reported_by_role }}</div>
+            </td>
+            <td>
+              <a href="{{ url_for('issue_detail', issue_id=issue.id) }}" class="btn btn-secondary btn-sm">
+                View &rarr;
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 48px; color: var(--text-muted);">
+              <div style="font-size: 32px; margin-bottom: 8px;">🔍</div>
+              <div style="font-weight: 700; font-size: 15px; color: var(--text-primary);">No issues found matching your criteria</div>
+              <p style="font-size: 13px; margin-top: 4px;">Try modifying filters or raise a new request.</p>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

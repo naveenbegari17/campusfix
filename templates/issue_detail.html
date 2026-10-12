@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Issue #{{ issue.id }} - CampusFix{% endblock %}
+
+{% block content %}
+<div class="content-header">
+  <div>
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+      <span class="badge badge-{{ issue.status.lower().replace(' ', '-') }}" style="font-size: 13px;">{{ issue.status }}</span>
+      <span class="badge badge-{{ issue.priority.lower() }}" style="font-size: 13px;">{{ issue.priority }} Priority</span>
+      <span style="color: var(--text-muted); font-size: 13px;">Issue #{{ issue.id }}</span>
+    </div>
+    <h1 class="page-title">{{ issue.title }}</h1>
+  </div>
+  <div>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">&larr; Back to Dashboard</a>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+  <!-- Left Column: Details -->
+  <div>
+    <div class="card">
+      <h3 class="card-title">Issue Details</h3>
+      {% if issue.ai_reasoning %}
+      <div style="margin-bottom: 20px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 14px 16px;">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #1d4ed8; text-transform: uppercase;">
+          <span>🤖</span> AI Agent Routing Analysis
+        </div>
+        <div style="font-size: 14px; color: #1e3a8a; margin-top: 4px;">
+          {{ issue.ai_reasoning }}
+        </div>
+      </div>
+      {% endif %}
+
+      <div style="margin-bottom: 20px;">
+        <div class="form-label" style="color: var(--text-muted);">Description</div>
+        <p style="white-space: pre-wrap; font-size: 15px; color: var(--text-dark); background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">{{ issue.description }}</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+        <div>
+          <div class="form-label" style="color: var(--text-muted);">Location</div>
+          <div style="font-weight: 600; font-size: 15px;">📍 {{ issue.location }}</div>
+        </div>
+        <div>
+          <div class="form-label" style="color: var(--text-muted);">Category</div>
+          <div style="font-weight: 600; font-size: 15px;">📂 {{ issue.category }}</div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div>
+          <div class="form-label" style="color: var(--text-muted);">Reported By</div>
+          <div style="font-weight: 600; font-size: 14px;">{{ issue.reported_by_name }}</div>
+          <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Role: {{ issue.reported_by_role }}</div>
+        </div>
+        <div>
+          <div class="form-label" style="color: var(--text-muted);">Reported Date</div>
+          <div style="font-weight: 600; font-size: 14px;">{{ issue.created_at }}</div>
+        </div>
+      </div>
+
+      {% if issue.resolution_notes %}
+      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+        <div class="form-label" style="color: var(--text-muted);">Maintenance & Resolution Notes</div>
+        <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 12px; border-radius: 8px; color: #065f46; font-size: 14px;">
+          {{ issue.resolution_notes }}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right Column: Status & Department Actions -->
+  <div>
+    <!-- Department Assignment Card -->
+    <div class="card">
+      <h3 class="card-title">Assigned Department</h3>
+      <div style="background: #f1f5f9; border-radius: 8px; padding: 14px; text-align: center; margin-bottom: 16px;">
+        <div style="font-size: 12px; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Department</div>
+        <div style="font-size: 18px; font-weight: 700; color: var(--primary); margin-top: 4px;">{{ issue.assigned_department }}</div>
+      </div>
+
+      <!-- Admin Reassignment Form -->
+      {% if session.get('role') == 'admin' %}
+      <div style="border-top: 1px dashed var(--border-color); padding-top: 16px;">
+        <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
+          Admin: Reassign Department
+        </div>
+        <form method="POST" action="{{ url_for('reassign_department', issue_id=issue.id) }}">
+          <div class="form-group">
+            <select name="assigned_department" class="form-select" style="margin-bottom: 10px;">
+              {% for dept in all_depts %}
+                <option value="{{ dept }}" {% if issue.assigned_department == dept %}selected{% endif %}>{{ dept }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-secondary btn-sm btn-block">Save Reassignment</button>
+          </div>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Status Management Card -->
+    {% if session.get('role') == 'admin' or (session.get('role') == 'staff' and session.get('department') == issue.assigned_department) %}
+    <div class="card">
+      <h3 class="card-title">Update Status</h3>
+      <form method="POST" action="{{ url_for('update_status', issue_id=issue.id) }}">
+        <div class="form-group">
+          <label class="form-label" for="status">Change Status</label>
+          <select id="status" name="status" class="form-select">
+            <option value="Open" {% if issue.status == 'Open' %}selected{% endif %}>Open</option>
+            <option value="In Progress" {% if issue.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+            <option value="Resolved" {% if issue.status == 'Resolved' %}selected{% endif %}>Resolved</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="resolution_notes">Resolution / Action Note</label>
+          <textarea
+            id="resolution_notes"
+            name="resolution_notes"
+            rows="3"
+            class="form-textarea"
+            placeholder="Add update note, technician name, or fix details..."
+          >{{ issue.resolution_notes or '' }}</textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">
+          Update Issue
+        </button>
+      </form>
+    </div>
+    {% else %}
+    <div class="card" style="background: #fafafa; border: 1px dashed var(--border-color);">
+      <div style="font-size: 13px; color: var(--text-muted); text-align: center;">
+        🔒 Status updates are restricted to <strong>{{ issue.assigned_department }}</strong> staff and Administrators.
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Delete Option: Restricted Exclusively to Admin -->
+    {% if session.get('role') == 'admin' %}
+    <div class="card" style="border-color: #fecaca; background: #fff5f5;">
+      <h3 class="card-title" style="color: #991b1b; font-size: 15px;">Admin Danger Zone</h3>
+      <p style="font-size: 13px; color: #7f1d1d; margin-bottom: 12px;">Permanently delete this issue from the system.</p>
+      <form method="POST" action="{{ url_for('delete_issue', issue_id=issue.id) }}" onsubmit="return confirm('Are you sure you want to permanently delete Issue #{{ issue.id }}? This action cannot be undone.');">
+        <button type="submit" class="btn btn-block" style="background: #dc2626; color: #fff; font-size: 13px; padding: 8px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+          🗑️ Delete Issue
+        </button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

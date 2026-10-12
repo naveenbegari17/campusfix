@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Raise an Issue - CampusFix{% endblock %}
+
+{% block content %}
+<div class="content-header">
+  <div>
+    <h1 class="page-title">Submit a Campus Issue</h1>
+    <p class="page-desc">Report maintenance, electrical, civil, or IT problems on campus. Our system routes them automatically.</p>
+  </div>
+  <div>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">&larr; Back to Dashboard</a>
+  </div>
+</div>
+
+<div class="card" style="max-width: 760px; margin: 0 auto;">
+  <form method="POST" action="{{ url_for('raise_issue') }}">
+    <div class="form-group">
+      <label class="form-label" for="title">Issue Title *</label>
+      <input
+        type="text"
+        id="title"
+        name="title"
+        class="form-input"
+        placeholder="e.g. Ceiling light flickering, Broken chair, Wi-Fi not connecting"
+        required
+        oninput="previewAssignment()"
+      >
+      <div class="form-help">Be concise and descriptive.</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="category">Category</label>
+      <select id="category" name="category" class="form-select" onchange="previewAssignment()">
+        <option value="Electrical">Electrical (Lights, Fans, Sockets, Wiring)</option>
+        <option value="Furniture & Civil">Furniture & Civil (Benches, Desks, Doors, Windows, Walls)</option>
+        <option value="Plumbing">Plumbing (Water Leaks, Restrooms, Pipes, Taps)</option>
+        <option value="IT & Network">IT & Network (Computers, Wi-Fi, Projectors)</option>
+        <option value="General & Other">General & Other</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="location">Building or Classroom Location *</label>
+      <input
+        type="text"
+        id="location"
+        name="location"
+        class="form-input"
+        placeholder="e.g. Block C - Room 302, Library 1st Floor, Admin Hall"
+        required
+      >
+      <div class="form-help">Specify exact hall, room number, or floor.</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="priority">Priority Level</label>
+      <select id="priority" name="priority" class="form-select">
+        <option value="Low">Low - Minor cosmetic issue</option>
+        <option value="Medium" selected>Medium - Normal repair</option>
+        <option value="High">High - Disrupting class or work</option>
+        <option value="Urgent">Urgent - Safety hazard or emergency</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="description">Detailed Description *</label>
+      <textarea
+        id="description"
+        name="description"
+        rows="4"
+        class="form-textarea"
+        placeholder="Describe the issue in detail (e.g. sparks seen near breaker, water valve broken under sink)..."
+        required
+        oninput="previewAssignment()"
+      ></textarea>
+    </div>
+
+    <!-- Live AI Routing Preview Banner -->
+    <div id="dept-preview" style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;">
+      <div>
+        <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #1e40af; display: flex; align-items: center; gap: 6px;">
+          <span>🤖</span> AI Agent Routing Analysis
+        </div>
+        <div style="font-size: 15px; color: #1e3a8a; margin-top: 4px;">
+          Assigned Department: <strong id="preview-dept-name" style="color: #1d4ed8;">Admin Review</strong>
+        </div>
+        <div id="preview-ai-reason" style="font-size: 13px; color: #3b82f6; margin-top: 4px;">
+          AI Agent is analyzing problem descriptions in real-time...
+        </div>
+      </div>
+      <span style="font-size: 28px;">⚡</span>
+    </div>
+
+    <div style="display: flex; gap: 12px; justify-content: flex-end;">
+      <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary" style="padding-left: 28px; padding-right: 28px;">
+        Submit Issue
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+// Mirror AI Agent keyword analysis logic live in browser
+function previewAssignment() {
+  const title = (document.getElementById('title').value || '').toLowerCase();
+  const desc = (document.getElementById('description').value || '').toLowerCase();
+  const category = (document.getElementById('category').value || '').toLowerCase();
+  const text = `${title} ${desc} ${category}`;
+
+  const it = ['wifi', 'wi-fi', 'internet', 'network', 'computer', 'pc', 'laptop', 'projector', 'hdmi', 'printer', 'lan', 'software', 'screen', 'monitor', 'keyboard', 'mouse', 'audio', 'speaker', 'mic', 'hotspot'];
+  const elec = ['light', 'bulb', 'switch', 'wiring', 'wire', 'power', 'electricity', 'fan', 'ac', 'cooler', 'voltage', 'short circuit', 'spark', 'generator', 'socket'];
+  const plumb = ['water', 'tap', 'leak', 'leakage', 'pipe', 'drain', 'drainage', 'sink', 'toilet', 'flush', 'restroom', 'washroom', 'sewage'];
+  const civil = ['bench', 'desk', 'chair', 'table', 'door', 'window', 'hinge', 'lock', 'glass', 'wall', 'paint', 'crack', 'plaster', 'floor', 'tile', 'roof', 'board', 'blackboard', 'whiteboard'];
+
+  let dept = 'Admin Review';
+  let reason = 'AI Agent detected general inquiry. Flagged for Admin Review.';
+
+  if (it.some(k => text.includes(k))) {
+    dept = 'IT Support';
+    reason = 'AI Agent classified digital infrastructure/hardware requirements.';
+  } else if (elec.some(k => text.includes(k))) {
+    dept = 'Electrical Maintenance';
+    reason = 'AI Agent identified electrical wiring/power hazards.';
+  } else if (plumb.some(k => text.includes(k))) {
+    dept = 'Plumbing Maintenance';
+    reason = 'AI Agent detected sanitation and water fixtures.';
+  } else if (civil.some(k => text.includes(k))) {
+    dept = 'Civil & Facilities';
+    reason = 'AI Agent identified physical facility/classroom fixture repairs.';
+  }
+
+  document.getElementById('preview-dept-name').innerText = dept;
+  document.getElementById('preview-ai-reason').innerText = reason;
+}
+window.onload = previewAssignment;
+</script>
+{% endblock %}
