@@ -4,8 +4,17 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from werkzeug.security import check_password_hash
 from db import get_db, init_db, assign_department, analyze_issue_with_ai
 
-app = Flask(__name__)
-app.secret_key = 'campusfix_dev_secret_key_change_in_production'
+# Note for Vercel deployment:
+# public/static/style.css is served directly by Vercel CDN.
+# static/style.css is used for local Flask runs. Keep both synced when modifying CSS.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+app = Flask(
+    __name__,
+    template_folder=os.path.join(BASE_DIR, 'templates'),
+    static_folder=os.path.join(BASE_DIR, 'static'),
+    static_url_path='/static'
+)
+app.secret_key = os.environ.get('SECRET_KEY', 'campusfix_dev_secret_key_change_in_production')
 
 # Initialize database on startup
 with app.app_context():
