@@ -2,7 +2,16 @@ import os
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 
-DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'campusfix.db')
+# On serverless platforms like Vercel, the project directory is read-only.
+# We copy or use /tmp/campusfix.db so SQLite can write.
+if os.environ.get('VERCEL'):
+    DATABASE = '/tmp/campusfix.db'
+    _ORIGINAL_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'campusfix.db')
+    if not os.path.exists(DATABASE) and os.path.exists(_ORIGINAL_DB):
+        import shutil
+        shutil.copyfile(_ORIGINAL_DB, DATABASE)
+else:
+    DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'campusfix.db')
 
 def get_db():
     conn = sqlite3.connect(DATABASE)
